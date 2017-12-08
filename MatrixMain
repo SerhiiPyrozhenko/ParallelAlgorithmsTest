@@ -1,0 +1,43 @@
+public class MatrixMain {
+    private static final int SIZE = 2048;
+    private static final int TIMES_COUNT = 10;
+    private static final int CORES_COUNT = Runtime.getRuntime().availableProcessors();
+
+    public static void main(String[] args) {
+        int[][] firstMatrix = Matrix.CreateRandomMatrix(SIZE, SIZE);
+        int[][] secondMatrix = Matrix.CreateRandomMatrix(SIZE, SIZE);
+        int[][] usualResult = new int[SIZE][SIZE];
+        int[][] parallelResult = new int[SIZE][SIZE];
+
+        long start, finish, difference, minTimeUsual, minTimeParallel;
+        minTimeUsual = minTimeParallel = Integer.MAX_VALUE;
+
+        for (int i = 0; i < TIMES_COUNT; i++) {
+            //usual approach time estimation
+            start = System.currentTimeMillis();
+            usualResult = Matrix.MultiplySquareMatrix(firstMatrix, secondMatrix);
+            finish = System.currentTimeMillis();
+
+            difference = finish - start;
+            if (difference < minTimeUsual) {
+                minTimeUsual = difference;
+            }
+            //parallel approach time estimation
+            start = System.currentTimeMillis();
+            parallelResult = Matrix.MultiplySquareMatrixParallel(firstMatrix, secondMatrix, CORES_COUNT);
+            finish = System.currentTimeMillis();
+
+            difference = finish - start;
+            if (difference < minTimeParallel) {
+                minTimeParallel = difference;
+            }
+        }
+
+
+        //checking if matrices are similar in both version
+        if(Matrix.MatrixEquality(usualResult,parallelResult)){
+            System.out.println("Usual approach: " + minTimeUsual + "(ms)");
+            System.out.println("Parallel approach: " + minTimeParallel + "(ms)");
+        }
+    }
+}
