@@ -1,0 +1,142 @@
+#include "stdafx.h"
+using namespace std;
+#include "stdlib.h"
+#include <omp.h>
+#include <float.h>
+#include <cstdlib>
+#include <ctime>
+
+void CreateRandomMatrix(int** resultMatrix, size_t length)
+{
+	for (size_t i = 0; i < length; i++)
+	{
+		resultMatrix[i] = new int[length];
+		for (size_t j = 0; j < length; j++)
+		{
+			resultMatrix[i][j] = rand() % 10;
+		}
+	}
+}
+
+void CreateEmptyMatrix(int** resultMatrix, size_t length)
+{
+	for (size_t i = 0; i < length; i++)
+	{
+		resultMatrix[i] = new int[length];
+		for (size_t j = 0; j < length; j++)
+		{
+			resultMatrix[i][j] = 0;
+		}
+	}
+}
+
+bool MatrixEquality(int** firstMatrix, int** secondMatrix, size_t length) {
+	for (size_t i = 0; i < length; i++) {
+		for (size_t j = 0; j < length; j++) {
+			if (!(firstMatrix[i][j] == secondMatrix[i][j]))
+				return false;
+		}
+	}
+	return true;
+}
+
+void MatrixPrint(int** matrix, size_t length) {
+	for (size_t i = 0; i < length; i++) {
+		for (size_t j = 0; j < length; j++) {
+			printf("%i, ", matrix[i][j]);
+		}
+		printf("\n");
+	}
+}
+
+void MultiplySquareMatrix(int** firstMatrix, int** secondMatrix, int** resultMatrix, size_t length)
+{
+	for (int i = 0; i < length; i++)
+	{
+		for (int j = 0; j < length; j++)
+		{
+			int tempElement = firstMatrix[i][j];
+			for (int k = 0; k < length; k++)
+			{
+				resultMatrix[i][k] += tempElement * secondMatrix[j][k];
+			}
+		}
+	}
+}
+
+void MultiplySquareMatrixParallel(int** firstMatrix, int** secondMatrix, int** resultMatrix, size_t length)
+{
+#pragma omp parallel for
+	for (int i = 0; i < length; i++)
+	{
+		for (int j = 0; j < length; j++)
+		{
+			int tempElement = firstMatrix[i][j];
+			for (int k = 0; k < length; k++)
+			{
+				resultMatrix[i][k] += tempElement * secondMatrix[j][k];
+			}
+		}
+	}
+}
+
+const size_t SIZE = 2048;
+const int TIMES_COUNT = 3;
+
+int main()
+{
+	srand(time(NULL));
+
+	int** firstMatrix = new int*[SIZE];
+	int** secondMatrix = new int*[SIZE];
+	int** usualResult = new int*[SIZE];
+	int** parallelResult = new int*[SIZE];
+
+	CreateRandomMatrix(firstMatrix, SIZE);
+	CreateRandomMatrix(secondMatrix, SIZE);
+	CreateEmptyMatrix(usualResult, SIZE);
+	CreateEmptyMatrix(parallelResult, SIZE);
+
+	double start, finish, difference, minTimeUsual, minTimeParallel;
+	minTimeUsual = minTimeParallel = DBL_MAX;
+
+	for (size_t i = 0; i < TIMES_COUNT; i++)
+	{
+		start = omp_get_wtime();
+		MultiplySquareMatrix(firstMatrix, secondMatrix, usualResult, SIZE);
+		finish = omp_get_wtime();
+
+		difference = finish - start;
+		if (difference < minTimeUsual)
+			minTimeUsual = difference;
+
+		start = omp_get_wtime();
+		MultiplySquareMatrixParallel(firstMatrix, secondMatrix, parallelResult, SIZE);
+		finish = omp_get_wtime();
+
+		difference = finish - start;
+		if (difference < minTimeParallel)
+			minTimeParallel = difference;
+	}
+
+	if (MatrixEquality(usualResult, parallelResult, SIZE)) {
+		printf("Usual approach: %lg secs\n", minTimeUsual);
+		printf("Parallel approach: %lg secs\n", minTimeParallel);
+	}
+
+	for (size_t i = 0; i < SIZE; i++)
+	{
+		delete[] firstMatrix[i];
+		delete[] secondMatrix[i];
+		delete[] usualResult[i];
+		delete[] parallelResult[i];
+	}
+
+	delete[] firstMatrix;
+	delete[] secondMatrix;
+	delete[] usualResult;
+	delete[] parallelResult;
+
+	return 0;
+}
+
