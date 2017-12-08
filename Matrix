@@ -1,0 +1,111 @@
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.*;
+
+class Matrix {
+    static int[][] CreateRandomMatrix(int cols, int rows) {
+        int[][] matrix = new int[cols][rows];
+
+        Random r = new Random();
+        for (int i = 0; i < cols; i++) {
+            for (int j = 0; j < rows; j++) {
+                matrix[i][j] = r.nextInt(10);
+            }
+        }
+        return matrix;
+    }
+
+    static int[][] MultiplySquareMatrix(int[][] firstMatrix, int[][] secondMatrix){
+        int[][] resultMatrix = new int[firstMatrix.length][firstMatrix.length];
+        int length = firstMatrix.length;
+
+        for(int i = 0; i < length; i++){
+            for(int j = 0; j < length; j++){
+                int tempElement = firstMatrix[i][j];
+                for(int k = 0; k < length; k++){
+                    resultMatrix[i][k] += tempElement * secondMatrix[j][k];
+                }
+            }
+        }
+        return resultMatrix;
+    }
+
+    static int[][] MultiplySquareMatrixParallel(int[][] firstMatrix, int[][] secondMatrix, int CORES_COUNT) {
+        int[][] resultMatrix = new int[firstMatrix.length][firstMatrix.length];
+        int matrixLength = firstMatrix.length;
+        int scopeForEachThread = matrixLength/CORES_COUNT;
+        int newThreadNum,currentScope;
+
+        //the quantity of threads will equal to CORES_COUNT - 1 ( because of method implementation)
+        ExecutorService executorService = Executors.newFixedThreadPool(CORES_COUNT);
+        //list of threads results to wait for all of the threads in the future
+        List<Future<int[][]>> resultList = new ArrayList<Future<int[][]>>();
+
+        //calculation by new threads ( quantity of cores - 1)
+        for(newThreadNum = 0,  currentScope = 0; newThreadNum < CORES_COUNT - 1;
+            newThreadNum++, currentScope += scopeForEachThread ){
+            //execution of the thread with arguments in constructor. Submit() similar to start() in Thread and Runnable
+            Future<int[][]> result = executorService.submit(new MatrixMultiplyThread(
+                    firstMatrix,secondMatrix,resultMatrix,currentScope,currentScope+scopeForEachThread));
+            resultList.add(result);
+        }
+        //last calculation by main thread
+        for (int i = currentScope; i < currentScope + scopeForEachThread; i++) {
+            for (int j = 0; j < firstMatrix.length; j++) {
+                int tempElement = firstMatrix[i][j];
+                for (int k = 0; k < firstMatrix.length; k++) {
+                    resultMatrix[i][k] += tempElement * secondMatrix[j][k];
+                }
+            }
+        }
+        //future.get is similar to waiting by JOIN in Thread and Runnable
+        for(Future<int[][]> future: resultList){
+            try {
+                int[][] value = future.get();
+            } catch (InterruptedException | ExecutionException ex) {
+                ex.printStackTrace();
+            }
+        }
+        executorService.shutdown();
+
+        return resultMatrix;
+    }
+
+    static boolean MatrixEquality(int[][] firstMatrix, int[][] secondMatrix) {
+        for (int i = 0; i < firstMatrix.length; i++) {
+            for (int j = 0; j < firstMatrix[0].length; j++) {
+                if (!(firstMatrix[i][j] == secondMatrix[i][j]))
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    //цей алгоритм написано для перевірки, на скільки звичайний алгоритм повільніше ніж ефективний
+    static int[][] MultiplySquareMatrixBadAlgorithm(int[][] firstMatrix, int[][] secondMatrix){
+        int[][] resultMatrix = new int[firstMatrix.length][firstMatrix.length];
+        int length = firstMatrix.length;
+
+        for(int i = 0; i < length; i++){
+            for(int j = 0; j < length; j++){
+                for(int k = 0; k < length; k++){
+                    resultMatrix[i][k] += firstMatrix[i][k] * secondMatrix[k][j];
+                }
+            }
+        }
+        return resultMatrix;
+    }
+
+    static void PrintMatrix(int[][] matrix) {
+        for (int i = 0; i < matrix.length; i++) {
+            for (int j = 0; j < matrix[0].length; j++) {
+                System.out.print(matrix[i][j] + " ");
+            }
+            System.out.println();
+        }
+        System.out.println();
+    }
+
+
+}
