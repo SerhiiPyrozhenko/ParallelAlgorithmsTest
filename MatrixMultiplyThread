@@ -1,0 +1,36 @@
+import java.util.concurrent.Callable;
+
+public class MatrixMultiplyThread implements Callable<int[][]> {
+    private int[][] firstMatrix;
+    private int[][] secondMatrix;
+    private int[][] resultMatrix;
+    private int startBound;
+    private int finishBound;
+
+    MatrixMultiplyThread(int[][] firstMatrix,
+                         int[][] secondMatrix,
+                         int[][] resultMatrix,
+                         int startBound,
+                         int finishBound) {
+        this.firstMatrix = firstMatrix;
+        this.secondMatrix = secondMatrix;
+        this.resultMatrix = resultMatrix;
+        this.startBound = startBound;
+        this.finishBound = finishBound;
+    }
+
+    @Override
+    public int[][] call() throws Exception {
+        int length = firstMatrix.length;
+        for (int i = startBound; i < finishBound; i++) {
+            for (int j = 0; j < length; j++) {
+                int tempElement = firstMatrix[i][j];
+                for (int k = 0; k < length; k++) {
+                    resultMatrix[i][k] += tempElement * secondMatrix[j][k];
+                }
+            }
+        }
+        return resultMatrix;
+    }
+
+}
